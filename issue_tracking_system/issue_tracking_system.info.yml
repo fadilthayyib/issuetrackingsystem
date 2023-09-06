@@ -1,0 +1,5 @@
+name: Issue Tracking System
+type: module
+description: Provide a Issue tracking system
+package: Custom
+core_version_requirement: ^9 || ^10

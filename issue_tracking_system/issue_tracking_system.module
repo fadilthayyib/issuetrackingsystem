@@ -1,0 +1,47 @@
+<?php
+
+/**
+ * @file
+ * Primary module hooks for Issue Tracking System module.
+ */
+
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\node\NodeInterface;
+use Drupal\user\Entity\User;
+
+/**
+ * Implements hook_ENTITY_TYPE_presave() for node entities.
+ */
+function issue_tracking_system_node_presave(NodeInterface $entity) {
+  if ($entity->getType() == 'issue') {
+    $current_user = \Drupal::currentUser();
+    $entity->set('field_reporter', $current_user->id());
+  }
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function issue_tracking_system_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+
+  if ($form_id == 'node_issue_form') {
+    $current_user = \Drupal::currentUser();
+    $user_entity = User::load($current_user->id());
+    $form['field_reporter']['widget'][0]['target_id']['#default_value'] = $user_entity;
+    $form['field_reporter']['widget'][0]['target_id']['#disabled'] = TRUE;
+
+    $reporter_uid = $form['field_reporter']['widget'][0]['target_id']['#default_value']->id();
+    $query = \Drupal::entityQuery('user')
+      ->condition('status', 1);
+    if (!empty($reporter_uid)) {
+      $query->condition('uid', $reporter_uid, '<>');
+    }
+    $user_ids = $query->execute();
+    $users = User::loadMultiple($user_ids);
+    $options = [];
+    foreach ($users as $user) {
+      $options[$user->id()] = $user->getAccountName();
+    }
+    $form['field_assignee']['widget']['#options'] = $options;
+  }
+}

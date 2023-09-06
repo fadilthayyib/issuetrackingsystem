@@ -1,0 +1,127 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the Issue Tracking System module.
+ */
+
+use Drupal\field\Entity\FieldConfig;
+use Drupal\field\Entity\FieldStorageConfig;
+use Drupal\taxonomy\Entity\Term;
+use Drupal\taxonomy\Entity\Vocabulary;
+
+/**
+ * Implements hook_install().
+ */
+function issue_tracking_system_install() {
+  $issueTypeVocabulary = Vocabulary::create([
+    'vid' => 'issue_type',
+    'name' => 'Issue Type',
+    'description' => 'Vocabulary for issue types.',
+  ]);
+  $issueTypeVocabulary->save();
+  $issueTypeTerms = [
+    'New feature',
+    'Change',
+    'Task',
+    'Bug',
+    'Improvement',
+  ];
+  foreach ($issueTypeTerms as $term) {
+    Term::create([
+      'vid' => 'issue_type',
+      'name' => $term,
+    ])->save();
+  }
+
+  $priorityVocabulary = Vocabulary::create([
+    'vid' => 'priority',
+    'name' => 'Priority',
+    'description' => 'Vocabulary for priority of the issues.',
+  ]);
+  $priorityVocabulary->save();
+  $priorityTerms = [
+    'Critical',
+    'High',
+    'Low',
+    'Trivial',
+  ];
+  foreach ($priorityTerms as $term) {
+    Term::create([
+      'vid' => 'priority',
+      'name' => $term,
+    ])->save();
+  }
+
+  $statusVocabulary = Vocabulary::create([
+    'vid' => 'status',
+    'name' => 'Status',
+    'description' => 'Vocabulary for the Status of the Issue',
+  ]);
+  $statusVocabulary->save();
+  $statusTerms = [
+    'To Do',
+    'Progress',
+    'In Review',
+    'Done',
+  ];
+  foreach ($statusTerms as $term) {
+    Term::create([
+      'vid' => 'status',
+      'name' => $term,
+    ])->save();
+  }
+
+  $content_type = 'issue';
+  $field_names = [
+    'field_issue_type',
+    'field_priority',
+    'field_issue_status',
+  ];
+
+  $field_labels = [
+    'Issue Type',
+    'Priority',
+    'Status',
+  ];
+  $vocabularies = [
+    'issue_type',
+    'priority',
+    'status',
+  ];
+
+  foreach ($field_names as $index => $field_name) {
+    $field_storage_config = FieldStorageConfig::create([
+      'field_name' => $field_name,
+      'entity_type' => 'node',
+      'type' => 'entity_reference',
+      'cardinality' => 1,
+      'settings' => [
+        'target_type' => 'taxonomy_term',
+      ],
+    ]);
+    $field_storage_config->save();
+
+    FieldConfig::create([
+      'field_storage' => $field_storage_config,
+      'bundle' => $content_type,
+      'label' => $field_labels[$index],
+      'required' => FALSE,
+      'widget' => [
+        'type' => 'options_select',
+      ],
+      'settings' => [
+        'handler' => 'default:taxonomy_term',
+        'handler_settings' => [
+          'target_bundles' => [$vocabularies[$index]],
+          'sort' => [
+            'field' => 'name',
+            'order' => 'ASC',
+          ],
+          'auto_create' => FALSE,
+        ],
+      ],
+    ])->save();
+  }
+
+}
